@@ -23,6 +23,7 @@ flutter:
   assets:
     - assets/models/
     - assets/fonts/
+    - assets/isyarat/
   fonts:
     - family: Lexend
       fonts:
