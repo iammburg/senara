@@ -3,6 +3,9 @@ import '../widgets/button.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:camera/camera.dart';
 import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:ui' as ui;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isCameraInitialized = false;
   bool _isProcessingFrame = false;
   bool _isImageStreamActive = false;
+  File? _selectedImage;
 
   // Performance optimization
   DateTime _lastPredictionTime = DateTime.now();
@@ -29,16 +33,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _lastPrediction;
   int _consistentPredictionCount = 0;
   static const int _requiredConsistency = 2; // Reduced consistency requirement
-
-  // Motion detection for J and Z
-  List<String> _motionSequence = [];
-  DateTime _lastMotionTime = DateTime.now();
-  static const int _motionTimeoutMs = 2000; // 2 seconds timeout for motion
-  static const int _maxSequenceLength = 10; // Max frames to track
-  
-  // Hand position tracking for motion detection
-  List<Map<String, double>> _handPositions = [];
-  static const double _motionThreshold = 50.0; // Minimum movement threshold
 
   // Buffer management
   int _frameSkipCounter = 0;
@@ -349,11 +343,116 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _uploadMedia() {
-    // TODO: Implement media upload logic
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Fitur upload media akan ditambahkan')),
+  Future<void> _uploadMedia() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+        translationResult = "Memproses gambar...";
+      });
+      await _predictImage(_selectedImage!);
+    } else {
+      setState(() {
+        translationResult = "Tidak ada gambar yang dipilih.";
+      });
+    }
+  }
+
+  Future<void> _predictImage(File imageFile) async {
+    try {
+      if (_interpreter == null) {
+        await _loadModel();
+        if (_interpreter == null) {
+          setState(() {
+            translationResult = "Gagal memuat model";
+          });
+          return;
+        }
+      }
+      // Baca gambar dan resize ke input model
+      final bytes = await imageFile.readAsBytes();
+      final img = await decodeImageFromList(bytes) as ui.Image;
+      final inputTensors = _interpreter!.getInputTensors();
+      final inputShape = inputTensors[0].shape;
+      final inputSize = inputShape[1];
+      // Resize dan konversi ke tensor [1, inputSize, inputSize, 3]
+      final input = await _preprocessImageFromFile(img, inputSize);
+      final outputTensors = _interpreter!.getOutputTensors();
+      final numClasses = outputTensors[0].shape.last;
+      final output = List.filled(numClasses, 0.0).reshape([1, numClasses]);
+      _interpreter!.run(input, output);
+      final predictions = output[0] as List<double>;
+      final maxIndex = predictions.indexOf(
+        predictions.reduce((a, b) => a > b ? a : b),
+      );
+      final confidence = predictions[maxIndex];
+      if (confidence > 0.5) {
+        final predictedLetter = String.fromCharCode(65 + maxIndex);
+        setState(() {
+          translationResult =
+              "Prediksi: $predictedLetter (Confidence: ${(confidence * 100).toStringAsFixed(1)}%)";
+        });
+      } else {
+        setState(() {
+          translationResult = "Gambar tidak dikenali. Coba gambar lain.";
+        });
+      }
+    } catch (e) {
+      setState(() {
+        translationResult = "Error memproses gambar: $e";
+      });
+    }
+  }
+
+  Future<List<List<List<List<double>>>>> _preprocessImageFromFile(
+    ui.Image img,
+    int inputSize,
+  ) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(recorder);
+    final paint = ui.Paint();
+    canvas.drawImageRect(
+      img,
+      ui.Rect.fromLTWH(0, 0, img.width.toDouble(), img.height.toDouble()),
+      ui.Rect.fromLTWH(0, 0, inputSize.toDouble(), inputSize.toDouble()),
+      paint,
     );
+    final picture = recorder.endRecording();
+    final imgResized = await picture.toImage(inputSize, inputSize);
+    final byteData = await imgResized.toByteData(
+      format: ui.ImageByteFormat.rawRgba,
+    );
+    final bytes = byteData!.buffer.asUint8List();
+    List<List<List<List<double>>>> input = List.generate(
+      1,
+      (batch) => List.generate(
+        inputSize,
+        (y) => List.generate(
+          inputSize,
+          (x) => List.generate(3, (c) {
+            int pixelIndex = (y * inputSize + x) * 4;
+            // RGBA
+            double r = bytes[pixelIndex] / 255.0;
+            double g = bytes[pixelIndex + 1] / 255.0;
+            double b = bytes[pixelIndex + 2] / 255.0;
+            return c == 0
+                ? r
+                : c == 1
+                ? g
+                : b;
+          }),
+        ),
+      ),
+    );
+    return input;
+  }
+
+  void _resetUpload() {
+    setState(() {
+      _selectedImage = null;
+      translationResult = "Hasil terjemahan akan muncul di sini...";
+    });
   }
 
   @override
@@ -417,23 +516,50 @@ class _HomeScreenState extends State<HomeScreen> {
                           borderRadius: BorderRadius.circular(16),
                           color: Colors.black12,
                         ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child:
-                              _cameraController != null &&
-                                  _isCameraInitialized &&
-                                  _cameraController!.value.isInitialized
-                              ? CameraPreview(_cameraController!)
-                              : const Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      CircularProgressIndicator(),
-                                      SizedBox(height: 16),
-                                      Text("Memuat kamera..."),
-                                    ],
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: _selectedImage != null
+                                  ? Image.file(
+                                      _selectedImage!,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                    )
+                                  : (_cameraController != null &&
+                                            _isCameraInitialized &&
+                                            _cameraController!
+                                                .value
+                                                .isInitialized
+                                        ? CameraPreview(_cameraController!)
+                                        : const Center(
+                                            child: Column(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
+                                              children: [
+                                                CircularProgressIndicator(),
+                                                SizedBox(height: 16),
+                                                Text("Memuat kamera..."),
+                                              ],
+                                            ),
+                                          )),
+                            ),
+                            if (_selectedImage != null)
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: IconButton(
+                                  icon: const Icon(
+                                    Icons.refresh,
+                                    color: Colors.white,
+                                    size: 28,
                                   ),
+                                  onPressed: _resetUpload,
+                                  tooltip: 'Reset',
                                 ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
