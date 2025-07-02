@@ -15,6 +15,34 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  // Urutan label sesuai output model 24‑kelas (tanpa J dan Z)
+  static const List<String> _labels = [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+  ];
+
   bool isScanning = false;
   String translationResult = "Hasil terjemahan akan muncul di sini...";
   CameraController? _cameraController;
@@ -83,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       debugPrint("Loading model...");
       _interpreter = await Interpreter.fromAsset(
-        'assets/models/best_model_v2.tflite',
+        'assets/models/best_model_v2_noJZ.tflite',
         options: InterpreterOptions()
           ..threads =
               2, // Reduced threads for better performance on low-end devices
@@ -237,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
         // Lowered confidence threshold for better detection
         if (confidence > 0.5) {
           // Convert index to letter (A=0, B=1, etc.)
-          final predictedLetter = String.fromCharCode(65 + maxIndex);
+          final predictedLetter = _labels[maxIndex];
 
           // Check for consistent predictions
           if (_lastPrediction == predictedLetter) {
@@ -388,7 +416,8 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       final confidence = predictions[maxIndex];
       if (confidence > 0.5) {
-        final predictedLetter = String.fromCharCode(65 + maxIndex);
+        final predictedLetter = _labels[maxIndex];
+
         setState(() {
           translationResult =
               "Prediksi: $predictedLetter (Confidence: ${(confidence * 100).toStringAsFixed(1)}%)";
