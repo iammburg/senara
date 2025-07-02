@@ -1,0 +1,32 @@
+name: senara
+description: "A new Flutter project."
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: ^3.9.0-293.0.dev
+
+dependencies:
+  flutter:
+    sdk: flutter
+  camera: ^0.11.1
+  tflite_flutter: ^0.11.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/models/
+    - assets/fonts/
+  fonts:
+    - family: Lexend
+      fonts:
+          - asset: assets/fonts/Lexend-Regular.ttf
+    - family: Inter
+      fonts:
+          - asset: assets/fonts/Inter-Regular.ttf
+
