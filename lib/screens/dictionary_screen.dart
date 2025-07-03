@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class DictionaryScreen extends StatelessWidget {
-  DictionaryScreen({super.key});
+  const DictionaryScreen({super.key});
 
   // Daftar huruf abjad tanpa J dan Z
   final List<String> _letters = const [

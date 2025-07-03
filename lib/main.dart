@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'screens/home_screen.dart';
 import 'screens/dictionary_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/firestore_debug_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -39,6 +44,7 @@ class _MainScreenState extends State<MainScreen> {
     DictionaryScreen(),
     const HistoryScreen(),
     const ProfileScreen(),
+    // FirestoreDebugScreen(),
   ];
 
   @override
@@ -83,6 +89,10 @@ class _MainScreenState extends State<MainScreen> {
                 icon: Icon(Icons.person_2),
                 label: 'Profil',
               ),
+              // BottomNavigationBarItem(
+              //   icon: Icon(Icons.bug_report),
+              //   label: 'Debug',
+              // ),
             ],
             selectedItemColor: Colors.blueAccent,
             selectedLabelStyle: TextStyle(

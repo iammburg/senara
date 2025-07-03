@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "21336189462",
+    "firebase_url": "https://senara-d0313-default-rtdb.firebaseio.com",
+    "project_id": "senara-d0313",
+    "storage_bucket": "senara-d0313.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:21336189462:android:fe3fe398c9aff3aa1ee337",
+        "android_client_info": {
+          "package_name": "com.example.senara"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "21336189462-fvc9rqvirv3965ift71skleg9ir7vmhr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.senara",
+            "certificate_hash": "8730a9546fedcdd1c098462f2ad528e3a77d813f"
+          }
+        },
+        {
+          "client_id": "21336189462-mo31ou78rm478aqc9lb2d1m8f9m4f9ai.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBijlPFeJM3oD5g9sZVjpkM6f99Wnh9ZDM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "21336189462-mo31ou78rm478aqc9lb2d1m8f9m4f9ai.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
